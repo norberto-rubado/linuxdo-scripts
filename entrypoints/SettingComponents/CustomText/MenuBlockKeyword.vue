@@ -1,7 +1,7 @@
 <template>
   <div class="item">
     <div class="tit">
-      {{ sort }}. 关键词屏蔽功能（使用英文，分隔）屏蔽包含关键字的话题标题、回复
+      {{ sort }}. 关键词屏蔽功能（中英文逗号均可分隔）屏蔽标题包含关键字的话题
     </div>
   </div>
   <textarea v-model="textarea" @input="handleChange"> </textarea>
@@ -50,7 +50,7 @@ export default {
 
       // 将用户输入的关键字分割为数组，并去除空格和空值
       const keywords = this.textarea
-        .split(",")
+        .split(/[,，]/)
         .map((keyword) => keyword.trim())
         .filter(Boolean);
       if (keywords.length === 0) return;
@@ -65,15 +65,6 @@ export default {
           })
           .parents("tr.topic-list-item")
           .remove();
-
-        // 检查评论回复
-        $(".topic-body .cooked")
-          .filter((index, element) => {
-            const text = $(element).text().toLowerCase();
-            return keywords.some((keyword) => text.includes(keyword.toLowerCase()));
-          })
-          .parents(".topic-post")
-          .remove();
       } catch (error) {
         console.error("init 方法出错：", error);
       }
@@ -82,19 +73,13 @@ export default {
       if (this.pollingInterval || !this.textarea) return;
       
       let previousTopicListLength = 0;
-      let previousPostStreamLength = 0;
 
       this.pollingInterval = setInterval(() => {
         try {
           const currentTopicListLength = $(".topic-list-body tr").length || 0;
-          const currentPostStreamLength = $(".post-stream .topic-post").length || 0;
 
           if (previousTopicListLength !== currentTopicListLength) {
             previousTopicListLength = currentTopicListLength;
-            this.init();
-          }
-          if (previousPostStreamLength !== currentPostStreamLength) {
-            previousPostStreamLength = currentPostStreamLength;
             this.init();
           }
         } catch (error) {
