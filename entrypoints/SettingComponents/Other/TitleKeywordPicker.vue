@@ -215,7 +215,6 @@ export default {
 			this.ai = { status: 'idle', items: [], error: '' };
 			this.pos = null;
 			this.visible = true;
-			this.$nextTick(this.reposition);
 
 			if (this.config.aiEnable) this.runAI();
 		},
@@ -240,7 +239,10 @@ export default {
 				top = rect.top - height - 6 >= 8 ? rect.top - height - 6 : Math.max(8, window.innerHeight - height - 8);
 			}
 			const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-			this.pos = { top, left };
+			// 位置不变时不赋值，避免 updated 钩子里反复渲染
+			if (!this.pos || this.pos.top !== top || this.pos.left !== left) {
+				this.pos = { top, left };
+			}
 		},
 		async runAI(force = false) {
 			if (!this.config.apikey) {
@@ -258,7 +260,6 @@ export default {
 			let result = force ? null : this.aiCache.get(cacheKey);
 			if (!result) {
 				this.ai = { status: 'loading', items: [], error: '' };
-				this.$nextTick(this.reposition);
 				try {
 					result = await suggestKeywordsWithTypeSafe({
 						apikey: this.config.apikey,
@@ -272,7 +273,6 @@ export default {
 				} catch (error) {
 					if (seq !== this.requestSeq) return;
 					this.ai = { status: 'error', items: [], error: `AI 推荐失败：${error.message}` };
-					this.$nextTick(this.reposition);
 					return;
 				}
 			}
@@ -285,7 +285,6 @@ export default {
 			if (!this.touched && items.length && items[0].prob > result.none) {
 				this.selectRange(items[0]);
 			}
-			this.$nextTick(this.reposition);
 		},
 		toggleToken(index) {
 			this.touched = true;
@@ -410,6 +409,10 @@ export default {
 		document.addEventListener('keydown', this.onDocumentKeydown);
 		window.addEventListener('scroll', this.reposition, { capture: true, passive: true });
 		window.addEventListener('resize', this.reposition);
+	},
+	// 面板内容变化（打开、AI 结果、选中的词、提示）后重新定位，保证不超出视口
+	updated() {
+		this.reposition();
 	},
 	beforeUnmount() {
 		if (this.observer) this.observer.disconnect();
