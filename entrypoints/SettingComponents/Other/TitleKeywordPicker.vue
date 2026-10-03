@@ -96,10 +96,9 @@ export default {
 	props: {
 		// 设置项 titleKeywordBlock：{ enable, aiEnable, apikey, model }
 		config: { type: Object, required: true },
-		// 关键词屏蔽文本 blockkeywrod
-		keywords: { type: String, default: '' },
 	},
-	emits: ['update:keywords'],
+	// saved：屏蔽词已写入数据库，参数为最新的 blockkeywrod 文本
+	emits: ['saved'],
 	data() {
 		return {
 			visible: false,
@@ -236,8 +235,9 @@ export default {
 			const width = panel.offsetWidth;
 			const height = panel.offsetHeight;
 			let top = rect.bottom + 6;
-			if (top + height > window.innerHeight - 8 && rect.top - height - 6 >= 8) {
-				top = rect.top - height - 6;
+			if (top + height > window.innerHeight - 8) {
+				// 下方放不下就翻到上方；上方也放不下则贴住视口底部（面板限高，内容可滚动）
+				top = rect.top - height - 6 >= 8 ? rect.top - height - 6 : Math.max(8, window.innerHeight - height - 8);
 			}
 			const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
 			this.pos = { top, left };
@@ -344,25 +344,26 @@ export default {
 		},
 		async confirm() {
 			const words = this.finalKeywords.map((k) => k.text);
-			const { value, added } = appendKeywords(this.keywords, words);
-			if (added.length === 0) {
-				this.messageToast('所选的词已在屏蔽列表中');
-				this.close();
-				return;
-			}
-
 			this.saving = true;
 			try {
-				// 重新从 IndexedDB 读取后只写入这一项，避免把设置面板里未保存的改动一并保存
-				settingsManager.clearCache();
-				const success = await settingsManager.setSetting('blockkeywrod', value);
+				// 基于数据库里的最新值追加（其他标签页可能刚加过词），也不会把设置面板里未保存的改动一并写入
+				let added = [];
+				const { success, value } = await settingsManager.modifySetting('blockkeywrod', (current) => {
+					const result = appendKeywords(current, words);
+					added = result.added;
+					return result.value;
+				});
 				if (!success) {
 					this.messageToast('保存屏蔽词失败，请重试！');
 					return;
 				}
-				this.$emit('update:keywords', value);
-				const removed = removeTopicsByKeywords(added);
-				this.messageToast(`已屏蔽「${added.join('、')}」，移除 ${removed} 个话题`);
+				this.$emit('saved', value);
+				const removed = removeTopicsByKeywords(words);
+				this.messageToast(
+					added.length
+						? `已屏蔽「${added.join('、')}」，移除 ${removed} 个话题`
+						: `所选的词已在屏蔽列表中，移除 ${removed} 个话题`,
+				);
 				this.close();
 			} finally {
 				this.saving = false;
@@ -428,6 +429,9 @@ export default {
 	z-index: 99998;
 	width: 380px;
 	max-width: calc(100vw - 16px);
+	max-height: calc(100vh - 16px);
+	max-height: calc(100dvh - 16px);
+	overflow-y: auto;
 	box-sizing: border-box;
 	padding: 12px 14px;
 	border: 1px solid var(--primary-low);

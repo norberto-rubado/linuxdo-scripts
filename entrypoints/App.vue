@@ -243,7 +243,7 @@
     <Signature />
   </div>
   <!-- 列表快速添加屏蔽词：标题后的按钮与选词面板 -->
-  <TitleKeywordPicker v-if="showtitlekeyword" :config="settingData.titleKeywordBlock" v-model:keywords="settingData.blockkeywrod" />
+  <TitleKeywordPicker v-if="showtitlekeyword" :config="settingData.titleKeywordBlock" @saved="settingData.blockkeywrod = $event" />
   <div id="messageToast"></div>
 </template>
 
