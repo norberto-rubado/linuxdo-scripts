@@ -9,6 +9,7 @@
 
 <script>
 import $ from "jquery";
+import { parseKeywords, removeTopicsByKeywords } from "../../utilities/titleKeywords.js";
 export default {
   props: {
     value: {
@@ -49,22 +50,13 @@ export default {
       if (!this.textarea) return;
 
       // 将用户输入的关键字分割为数组，并去除空格和空值
-      const keywords = this.textarea
-        .split(/[,，]/)
-        .map((keyword) => keyword.trim())
-        .filter(Boolean);
+      const keywords = parseKeywords(this.textarea);
       if (keywords.length === 0) return;
 
       // 安全检查 jQuery 的使用，防止元素不可用时出错
       try {
         // 检查话题标题
-        $(".topic-list .main-link .raw-topic-link>*")
-          .filter((index, element) => {
-            const text = $(element).text().toLowerCase();
-            return keywords.some((keyword) => text.includes(keyword.toLowerCase()));
-          })
-          .parents("tr.topic-list-item")
-          .remove();
+        removeTopicsByKeywords(keywords);
       } catch (error) {
         console.error("init 方法出错：", error);
       }
