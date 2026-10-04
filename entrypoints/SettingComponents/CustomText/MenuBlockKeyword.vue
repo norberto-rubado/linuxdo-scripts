@@ -8,7 +8,6 @@
 </template>
 
 <script>
-import $ from "jquery";
 import { parseKeywords, removeTopicsByKeywords } from "../../utilities/titleKeywords.js";
 export default {
   props: {
@@ -63,17 +62,11 @@ export default {
     },
     startPolling() {
       if (this.pollingInterval || !this.textarea) return;
-      
-      let previousTopicListLength = 0;
 
+      // 不按行数变化判断：从用户主页（不屏蔽）切回首页时，两边列表行数可能相同，会漏掉屏蔽
       this.pollingInterval = setInterval(() => {
         try {
-          const currentTopicListLength = $(".topic-list-body tr").length || 0;
-
-          if (previousTopicListLength !== currentTopicListLength) {
-            previousTopicListLength = currentTopicListLength;
-            this.init();
-          }
+          this.init();
         } catch (error) {
           console.error("轮询逻辑出错：", error);
         }

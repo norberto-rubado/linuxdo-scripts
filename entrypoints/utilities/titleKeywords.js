@@ -1,5 +1,6 @@
 // 标题关键词工具：分词、候选词生成、按关键词屏蔽话题、TypeSafe AI 推荐
 import $ from 'jquery';
+import { isUserPage } from './url';
 
 const segmenter =
 	typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('zh-CN', { granularity: 'word' }) : null;
@@ -33,9 +34,9 @@ export function appendKeywords(text, keywords) {
 	return { value: (base ? base + ',' : '') + added.join(','), added };
 }
 
-// 移除话题列表中标题包含关键词的话题，返回移除的数量
+// 移除话题列表中标题包含关键词的话题，返回移除的数量；用户主页列的是该用户自己的话题，不屏蔽
 export function removeTopicsByKeywords(keywords) {
-	if (!keywords || keywords.length === 0) return 0;
+	if (!keywords || keywords.length === 0 || isUserPage()) return 0;
 	const lowered = keywords.map((k) => k.toLowerCase());
 	const $rows = $('.topic-list .main-link .raw-topic-link>*')
 		.filter((index, element) => {

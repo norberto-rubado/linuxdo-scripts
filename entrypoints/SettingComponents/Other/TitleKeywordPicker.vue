@@ -88,6 +88,7 @@ import {
 	suggestKeywordsWithTypeSafe,
 	tokenizeTitle,
 } from '../../utilities/titleKeywords.js';
+import { isUserPage } from '../../utilities/url';
 
 const AI_MAX_ITEMS = 5;
 const AI_MIN_PROB = 0.02;
@@ -170,6 +171,7 @@ export default {
 		},
 		// 在话题标题后插入「屏蔽词」按钮，并保持在免打扰、预览按钮之后
 		injectButtons() {
+			if (isUserPage()) return;
 			$('.topic-list .main-link a.title').each(function () {
 				const id = $(this).attr('data-topic-id');
 				const $line = $(this).closest('.link-top-line');
